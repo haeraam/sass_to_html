@@ -1,11 +1,17 @@
+// ignore_for_file: public_member_api_docs, sort_constructors_first
 import 'dart:io';
 
 import 'package:carousel_slider/carousel_slider.dart';
 import 'package:cross_file/cross_file.dart';
 import 'package:desktop_drop/desktop_drop.dart';
 import 'package:file_picker/file_picker.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:styled_text/styled_text.dart';
+
+import 'dart:convert';
+import 'dart:html' as html;
+import 'dart:typed_data';
 
 void main() {
   runApp(const MyApp());
@@ -38,6 +44,15 @@ class MyHomePage extends StatefulWidget {
   State<MyHomePage> createState() => _MyHomePageState();
 }
 
+class UploadedScss {
+  final String name;
+  final String code;
+  UploadedScss({
+    required this.name,
+    required this.code,
+  });
+}
+
 class ConvertedHtml {
   ConvertedHtml({
     required this.code,
@@ -51,7 +66,7 @@ class ConvertedHtml {
 class _MyHomePageState extends State<MyHomePage> {
   String _res = 'upload scss please...';
   List _downLoadWaitList = [];
-  List<XFile> _waitList = [];
+  List<UploadedScss> _waitList = [];
   List<ConvertedHtml> _convertedList = [];
 
   String _openTag({
@@ -127,10 +142,19 @@ class _MyHomePageState extends State<MyHomePage> {
       allowedExtensions: ['scss'],
     );
     if (pickedFile != null) {
-      pickedFile.files.forEach((flieData) {
-        XFile file = XFile(flieData.path!);
+      for (var flieData in pickedFile.files) {
+        String code = '';
+        if (kIsWeb) {
+          code = String.fromCharCodes(flieData.bytes!);
+        } else {
+          if (Platform.isMacOS) {
+            code = File(flieData.path!).readAsStringSync();
+          }
+        }
+
+        UploadedScss file = UploadedScss(name: flieData.name.split('.').first, code: code);
         _waitList.add(file);
-      });
+      }
       setState(() {});
     } else {
       //파일 불러오기 실패시
@@ -139,23 +163,45 @@ class _MyHomePageState extends State<MyHomePage> {
 
   _onClickConvert() async {
     if (_waitList.isNotEmpty) {
-      _convertedList = await Future.wait(_waitList.map((file) async {
-        String code = await _convertScssToHtml(await file.readAsString());
-        return ConvertedHtml(code: code, name: file.name);
+      _convertedList = await Future.wait(_waitList.map((scss) async {
+        String code = await _convertScssToHtml(scss.code);
+        return ConvertedHtml(code: code, name: scss.name);
       }));
       setState(() {});
     }
   }
 
   _onClickDownload() async {
-    String? selectedDirectory = await FilePicker.platform.getDirectoryPath();
-
-    for (var html in _convertedList) {
-      final savedFile = File('$selectedDirectory/${html.name.split('/').last.split('.').first}.html');
-      await savedFile.writeAsString(html.code.replaceAll(RegExp(r'<.*?>'), '').replaceAll('&lt;', '<').replaceAll('&gt;', '>'));
+    if (kIsWeb) {
+      for (var html in _convertedList) {
+        _downloadFileInBorwser(html.name, html.code.replaceAll(RegExp(r'<.*?>'), '').replaceAll('&lt;', '<').replaceAll('&gt;', '>'));
+      }
+    } else {
+      String? selectedDirectory = await FilePicker.platform.getDirectoryPath();
+      for (var html in _convertedList) {
+        if (Platform.isMacOS) {
+          final savedFile = File('$selectedDirectory/${html.name.split('/').last.split('.').first}.html');
+          await savedFile.writeAsString(html.code.replaceAll(RegExp(r'<.*?>'), '').replaceAll('&lt;', '<').replaceAll('&gt;', '>'));
+        } else {}
+      }
     }
 
     _downLoadWaitList.clear();
+  }
+
+  void _downloadFileInBorwser(String fileName, String content) {
+    // 문자열을 Uint8List 데이터로 변환
+    Uint8List data = Uint8List.fromList(utf8.encode(content));
+    // Blob 생성
+    final blob = html.Blob([data]);
+    // Blob에서 Object URL 생성
+    final url = html.Url.createObjectUrlFromBlob(blob);
+    // 다운로드 링크 생성
+    final anchor = html.AnchorElement(href: url)
+      ..setAttribute("download", '$fileName.html')
+      ..click();
+    // Object URL 해제
+    html.Url.revokeObjectUrl(url);
   }
 
   _onClickClear() {
@@ -192,12 +238,14 @@ class _MyHomePageState extends State<MyHomePage> {
                 Expanded(
                   child: _convertedList.isEmpty
                       ? DropTarget(
-                          onDragDone: (detail) {
-                            setState(() {
-                              for (var file in detail.files) {
-                                if (file.name.split('.').last == 'scss') _waitList.add(file);
+                          onDragDone: (detail) async {
+                            for (var file in detail.files) {
+                              if (file.name.split('.').last == 'scss') {
+                                String code = await file.readAsString();
+                                _waitList.add(UploadedScss(name: file.name.split('.').first, code: code));
                               }
-                            });
+                            }
+                            setState(() {});
                           },
                           child: Container(
                             width: double.infinity,
@@ -217,7 +265,7 @@ class _MyHomePageState extends State<MyHomePage> {
                                     ),
                                   ))
                                 : Wrap(
-                                    children: [..._waitList.map((file) => FileCard(file: file))],
+                                    children: [..._waitList.map((file) => FileCard(scss: file))],
                                   ),
                           ),
                         )
@@ -255,8 +303,8 @@ class _MyHomePageState extends State<MyHomePage> {
 }
 
 class FileCard extends StatelessWidget {
-  const FileCard({super.key, required this.file});
-  final XFile file;
+  const FileCard({super.key, required this.scss});
+  final UploadedScss scss;
 
   @override
   Widget build(BuildContext context) {
@@ -271,7 +319,7 @@ class FileCard extends StatelessWidget {
       ),
       child: Center(
         child: Text(
-          file.name,
+          scss.name,
           style: const TextStyle(
             color: Colors.white,
             fontSize: 18,
