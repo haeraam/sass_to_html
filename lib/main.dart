@@ -1,4 +1,5 @@
 // ignore_for_file: public_member_api_docs, sort_constructors_first
+import 'dart:convert';
 import 'dart:io';
 
 import 'package:carousel_slider/carousel_slider.dart';
@@ -7,11 +8,9 @@ import 'package:desktop_drop/desktop_drop.dart';
 import 'package:file_picker/file_picker.dart';
 import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_svg/svg.dart';
 import 'package:styled_text/styled_text.dart';
-
-import 'dart:convert';
-import 'dart:html' as html;
-import 'dart:typed_data';
+import 'package:universal_html/html.dart' as html;
 
 void main() {
   runApp(const MyApp());
@@ -66,7 +65,11 @@ class ConvertedHtml {
 class _MyHomePageState extends State<MyHomePage> {
   String _res = 'upload scss please...';
   List _downLoadWaitList = [];
-  List<UploadedScss> _waitList = [];
+  List<UploadedScss> _waitList = [
+    UploadedScss(name: 'test', code: 'code'),
+    UploadedScss(name: 'test', code: 'code'),
+    UploadedScss(name: 'test', code: 'code'),
+  ];
   List<ConvertedHtml> _convertedList = [];
 
   String _openTag({
@@ -202,7 +205,6 @@ class _MyHomePageState extends State<MyHomePage> {
       ..click();
     // Object URL 해제
     html.Url.revokeObjectUrl(url);
-    
   }
 
   _onClickClear() {
@@ -249,6 +251,7 @@ class _MyHomePageState extends State<MyHomePage> {
                             setState(() {});
                           },
                           child: Container(
+                            constraints: const BoxConstraints(maxWidth: 420),
                             width: double.infinity,
                             padding: const EdgeInsets.all(40),
                             margin: const EdgeInsets.symmetric(horizontal: 80),
@@ -259,7 +262,8 @@ class _MyHomePageState extends State<MyHomePage> {
                             child: _waitList.isEmpty
                                 ? const Center(
                                     child: Text(
-                                    'drag file here...',
+                                    'drag and drop file\nor\npress upload button',
+                                    textAlign: TextAlign.center,
                                     style: TextStyle(
                                       color: Colors.white,
                                       fontSize: 25,
@@ -311,20 +315,33 @@ class FileCard extends StatelessWidget {
   Widget build(BuildContext context) {
     return Container(
       margin: const EdgeInsets.all(8),
-      padding: const EdgeInsets.all(8),
-      width: 105,
-      height: 105,
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(12),
-        color: const Color.fromARGB(113, 201, 204, 220),
-      ),
+      width: 95,
+      height: 95,
+      decoration: BoxDecoration(borderRadius: BorderRadius.circular(12), color: Color.fromARGB(75, 201, 204, 220)),
       child: Center(
-        child: Text(
-          scss.name,
-          style: const TextStyle(
-            color: Colors.white,
-            fontSize: 18,
-          ),
+        child: Stack(
+          alignment: Alignment.center,
+          children: [
+            ClipRect(
+              child: OverflowBox(
+                maxWidth: double.infinity, // 넘어가는 부분 허용
+                maxHeight: double.infinity, // 넘어가는 부분 허용
+                child: SvgPicture.asset(
+                  'assets/images/sass_logo.svg',
+                  width: 60,
+                  height: 60,
+                  clipBehavior: Clip.antiAlias,
+                ),
+              ),
+            ),
+            Text(
+              scss.name,
+              style: const TextStyle(
+                color: Colors.white,
+                fontSize: 18,
+              ),
+            )
+          ],
         ),
       ),
     );
