@@ -1,4 +1,3 @@
-// ignore_for_file: public_member_api_docs, sort_constructors_first
 import 'dart:convert';
 import 'dart:io';
 
@@ -65,11 +64,7 @@ class ConvertedHtml {
 class _MyHomePageState extends State<MyHomePage> {
   String _res = 'upload scss please...';
   List _downLoadWaitList = [];
-  List<UploadedScss> _waitList = [
-    UploadedScss(name: 'test', code: 'code'),
-    UploadedScss(name: 'test', code: 'code'),
-    UploadedScss(name: 'test', code: 'code'),
-  ];
+  List<UploadedScss> _waitList = [];
   List<ConvertedHtml> _convertedList = [];
 
   String _openTag({
@@ -251,7 +246,7 @@ class _MyHomePageState extends State<MyHomePage> {
                             setState(() {});
                           },
                           child: Container(
-                            constraints: const BoxConstraints(maxWidth: 420),
+                            constraints: const BoxConstraints(maxWidth: 413),
                             width: double.infinity,
                             padding: const EdgeInsets.all(40),
                             margin: const EdgeInsets.symmetric(horizontal: 80),
@@ -274,27 +269,44 @@ class _MyHomePageState extends State<MyHomePage> {
                                   ),
                           ),
                         )
-                      : CarouselSlider(
-                          options: CarouselOptions(
-                            aspectRatio: 1,
-                            disableCenter: true,
-                            enableInfiniteScroll: false,
+                      : Container(
+                          constraints: const BoxConstraints(maxWidth: 800),
+                          child: CarouselSlider(
+                            options: CarouselOptions(
+                              disableCenter: true,
+                              enableInfiniteScroll: false,
+                            ),
+                            items: _convertedList
+                                .map((item) => CustomScrollView(
+                                      slivers: [
+                                        SliverFillRemaining(
+                                          hasScrollBody: false,
+                                          child: Column(
+                                            children: <Widget>[
+                                              Text(item.name,style: TextStyle(fontSize: 20),),
+                                              SizedBox(height: 20),
+                                              Expanded(
+                                                child: Container(
+                                                  padding: const EdgeInsets.all(40),
+                                                  margin: const EdgeInsets.symmetric(horizontal: 10),
+                                                  decoration: BoxDecoration(
+                                                    borderRadius: BorderRadius.circular(25),
+                                                    color: const Color.fromARGB(255, 40, 42, 54),
+                                                  ),
+                                                  child: SingleChildScrollView(
+                                                    child: Container(
+                                                      child: Center(child: CodeText(code: item.code)),
+                                                    ),
+                                                  ),
+                                                ),
+                                              ),
+                                            ],
+                                          ),
+                                        ),
+                                      ],
+                                    ))
+                                .toList(),
                           ),
-                          items: _convertedList
-                              .map((item) => Container(
-                                    padding: const EdgeInsets.all(40),
-                                    margin: const EdgeInsets.symmetric(horizontal: 20),
-                                    decoration: BoxDecoration(
-                                      borderRadius: BorderRadius.circular(25),
-                                      color: const Color.fromARGB(255, 40, 42, 54),
-                                    ),
-                                    child: SingleChildScrollView(
-                                      child: Container(
-                                        child: Center(child: CodeText(code: item.code)),
-                                      ),
-                                    ),
-                                  ))
-                              .toList(),
                         ),
                 ),
                 const SizedBox(height: 32)
