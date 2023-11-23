@@ -202,6 +202,7 @@ class _MyHomePageState extends State<MyHomePage> {
       ..click();
     // Object URL 해제
     html.Url.revokeObjectUrl(url);
+    
   }
 
   _onClickClear() {
