@@ -74,9 +74,9 @@ class _MyHomePageState extends State<MyHomePage> {
   }) {
     String indent = '  ' * depth;
     return switch (tagName) {
-      'Link' => '$indent&lt;<tag>Link</tag> src="" <class>className</class><equal>=</equal><className>"$className"</className>/&gt;\n',
-      'Image' => '$indent&lt;<tag>Image</tag> alt ="" width="" heigth=""<class>className</class><equal>=</equal><className>"$className"</className>/&gt;\n',
-      _ => '$indent&lt;<tag>$tagName</tag> <class>className</class><equal>=</equal><className>"$className"</className>&gt;\n',
+      'Link' => '$indent&lt;<tag>Link</tag> href ="" <class>className</class><equal>=</equal><className>{SignInStyleEntity.$className}</className>/&gt;\n',
+      'Image' => '$indent&lt;<tag>Image</tag> src="" alt ="" fill={true} <class>className</class><equal>=</equal><className>{SignInStyleEntity.$className}</className>/&gt;\n',
+      _ => '$indent&lt;<tag>$tagName</tag> <class>className</class><equal>=</equal><className>{SignInStyleEntity.$className}</className>&gt;\n',
     };
   }
 
@@ -109,13 +109,15 @@ class _MyHomePageState extends State<MyHomePage> {
     List tagStak = [];
     bool findMediaTag = false;
     for (String line in contentsByLine) {
+      print(line);
       final matchedClassName = classNamePattern.firstMatch(line);
       final matchCloseTag = closeTagPattern.firstMatch(line);
 
-      if (line.contains('@media')) findMediaTag = true;
+      if (line.contains('@media') || line.contains('@include mobile')) findMediaTag = true;
       if (findMediaTag) continue;
 
       if (matchedClassName != null) {
+        print('tagOpen!!!');
         String className = matchedClassName[1] ?? '';
         String tagName = _getTageName(className: className, contents: contents);
         result += _openTag(tagName: tagName, className: className, depth: tagStak.length);
@@ -124,11 +126,13 @@ class _MyHomePageState extends State<MyHomePage> {
           tagStak.removeLast();
           result += _closeTag(tagName: tagName, depth: tagStak.length);
         }
-      } else if (matchCloseTag != null) {
+      } else if (matchCloseTag != null && tagStak.isNotEmpty) {
+        print('tagClose!!!');
         String tagName = tagStak.last;
         tagStak.removeLast();
         result += _closeTag(tagName: tagName, depth: tagStak.length);
       }
+      print(tagStak);
     }
     return result;
   }
@@ -283,7 +287,10 @@ class _MyHomePageState extends State<MyHomePage> {
                                           hasScrollBody: false,
                                           child: Column(
                                             children: <Widget>[
-                                              Text(item.name,style: TextStyle(fontSize: 20),),
+                                              Text(
+                                                item.name,
+                                                style: TextStyle(fontSize: 20),
+                                              ),
                                               SizedBox(height: 20),
                                               Expanded(
                                                 child: Container(
